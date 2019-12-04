@@ -39,23 +39,62 @@ void setPixel(unsigned char* img, int x, int y, unsigned char value)
 	img[y*iHeight+x] = value;
 }
 
-double getAreaAverage(unsigned char* img, tPonto TopLeft, tPonto BottomRight)
+double getAreaAverage(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
 {
 	double total = 0;
 	unsigned long count = 0;
-	for(int j = TopLeft.y; j<= BottomRight.y; j++)
+	for(int j = BottomLeft.y; j<= TopRight.y; j++)
 	{
-		for (int i = TopLeft.x; i <= BottomRight.x; i++)
+		for (int i = BottomLeft.x; i <= TopRight.x; i++)
 		{
 			count++;
 			total += getPixel(img, i, j);  
-			printf("(%d, %d)\n", i, j);
 		}		
 	}
+	printf("Av: %lf\n", total / count);
 	return total / count;
 }
 
-void draw
+void drawBorder(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
+{
+	for(int k = BottomLeft.y; k <= TopRight.y; k++)
+	{
+		setPixel(img, BottomLeft.x, k, 127);
+		setPixel(img, TopRight.x, k, 127);
+	}
+	for(int k = BottomLeft.x; k <= TopRight.x; k++)
+	{
+		setPixel(img, k, BottomLeft.y, 127);
+		setPixel(img, k, TopRight.y, 127);
+	}
+}
+void getBorderQuadtree(quadtree* root, unsigned char* img)
+{
+	if(root)
+	{
+		drawBorder(img, root->BottomLeft, root->TopRight);
+		printf("level = %d\n", root->Depth);
+		getBorderQuadtree(root->BL, img);
+		getBorderQuadtree(root->BR, img);
+		getBorderQuadtree(root->TL, img);
+		getBorderQuadtree(root->TR, img);
+	}
+}
+
+void SearchEdges(quadtree* root)
+{	
+	double avr = getAreaAverage(image, root->BottomLeft, root->TopRight);
+	double q_size = size_quadtree(root);
+	printf("Size: %d\n", q_size);
+	if(q_size > 15 & (avr > 2.0 & avr < 253.0))
+	{
+		split_quadtree(root);
+		SearchEdges(root->BL);
+		SearchEdges(root->BR);
+		SearchEdges(root->TL);
+		SearchEdges(root->TR);
+	}
+}
 
 void negativaImage(unsigned char* img, int w, int h) {
 
@@ -105,12 +144,17 @@ void desenhaVetorizacao() {
 /// ***********************************************************************
 
 void vetorizaImagem() {
+	quadtree Q;
+	tPonto p0, p1;
+	p0.x = 0;
+	p0.y = 0;
+	p1.x = iWidth - 1;
+	p1.y = iHeight - 1;
+	init_quadtree(&Q, p0, p1);
 	
-	printf("Aqui eu vou construir a estrutura base para a vetorizacao\n");
-	
-	// codifique aqui a sua rotina de montagem da estrutura de dados para suporte a
-	// vetorizacao 
-	
+	SearchEdges(&Q);
+
+	getBorderQuadtree(&Q, image);
 }
 	
 /// ***********************************************************************
@@ -146,11 +190,7 @@ void mouse(int button, int button_state, int x, int y ) {
 		switch (button) {
 			
 			case GLUT_LEFT_BUTTON	: 	
-				printf("botao esquerdo?\n");
-				tPonto y1, y2;
-				y1.x = y1.y = 30;
-				y2.x = y2.y = 35;
-				printf("%lf\n", getAreaAverage(image,y1, y2));				
+				printf("botao esquerdo?\n");		
 				break;
 	
 			case GLUT_RIGHT_BUTTON	:	
@@ -184,23 +224,6 @@ void desenho(void) {
 /// ***********************************************************************
 
 int main(int argc, char** argv) {
-	/*
-	quadtree x;
-	tPonto y1, y2;
-	y1.x = y1.y = 0;
-	y2.x = y2.y = 511;
-	
-	init_quadtree(&x,y1, y2);
-
-	y1.x = y1.y = 200;
-	y2.x = y2.y = 300;
-
-	x.TR = allocate_quadtree(y1,y2,1);
-
-	info_quadtree(&x);
-
-	info_quadtree(x.TR);
-	*/
 	char* filename = "images/Twitter.png";
 
     if (argc > 1)

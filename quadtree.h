@@ -3,8 +3,8 @@
 #include "Ponto.h"
 
 typedef struct  tQuadtree{	
-    tPonto TopLeft; // Coordenadas do ponto superior esquerdo do quadrante
-    tPonto BottomRight; // Coordenadas do ponto inferior direito do quadrante
+    tPonto BottomLeft; // Coordenadas do ponto superior esquerdo do quadrante
+    tPonto TopRight; // Coordenadas do ponto inferior direito do quadrante
     int Depth; // Profundidade
     struct quadtree* TL; // Quadrante superior esquerdo
     struct quadtree* TR; // Quadrante superior direito
@@ -17,3 +17,7 @@ typedef struct  tQuadtree{
 void init_quadtree(quadtree* root, tPonto _TopLeft, tPonto _BottomRight);
 quadtree* allocate_quadtree(tPonto _TopLeft, tPonto _BottomRight, int _Depth);
 void info_quadtree(quadtree* x);
+void split_quadtree(quadtree* r);
+quadtree get_quadtree(quadtree* r);
+int size_quadtree(quadtree* r);
+
