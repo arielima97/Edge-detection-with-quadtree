@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
-
+#include "quadtree.h"
 #include <GL/glut.h>
 
 #include "Ponto.h"
@@ -19,6 +19,44 @@ bool 			desenha = false;
 /// ** 
 /// ***********************************************************************
 
+unsigned char getPixel(unsigned char* img, int x, int y)
+{
+	if(y >= iHeight || y < 0 || x >= iWidth || x < 0)
+	{
+		printf("Out of range.\n");
+		return 0;	
+	}
+	return img[y*iHeight+x];
+}
+
+void setPixel(unsigned char* img, int x, int y, unsigned char value)
+{
+	if(y >= iHeight || y < 0 || x >= iWidth || x < 0)
+	{
+		printf("Out of range.\n");
+		return 0;	
+	}
+	img[y*iHeight+x] = value;
+}
+
+double getAreaAverage(unsigned char* img, tPonto TopLeft, tPonto BottomRight)
+{
+	double total = 0;
+	unsigned long count = 0;
+	for(int j = TopLeft.y; j<= BottomRight.y; j++)
+	{
+		for (int i = TopLeft.x; i <= BottomRight.x; i++)
+		{
+			count++;
+			total += getPixel(img, i, j);  
+			printf("(%d, %d)\n", i, j);
+		}		
+	}
+	return total / count;
+}
+
+void draw
+
 void negativaImage(unsigned char* img, int w, int h) {
 
 	unsigned char 	aux;
@@ -30,8 +68,10 @@ void negativaImage(unsigned char* img, int w, int h) {
 
 	for (j = 0 ; j < h ; j++) 
 		for (i = 0 ; i < w ; i++) 
-			img[j*w+i] = 255 - img[j*w+i]; 
+			setPixel(img, i, j, 255 - getPixel(img, i, j)); 
 }
+
+
 
 // ***********************************************
 // ******                                   ******
@@ -105,11 +145,17 @@ void mouse(int button, int button_state, int x, int y ) {
 	if 	(button_state == GLUT_DOWN ) {
 		switch (button) {
 			
-			case GLUT_LEFT_BUTTON	: 	printf("botao esquerdo?\n");
-										break;
+			case GLUT_LEFT_BUTTON	: 	
+				printf("botao esquerdo?\n");
+				tPonto y1, y2;
+				y1.x = y1.y = 30;
+				y2.x = y2.y = 35;
+				printf("%lf\n", getAreaAverage(image,y1, y2));				
+				break;
 	
-			case GLUT_RIGHT_BUTTON	:	printf("botao direito?\n");
-										break;
+			case GLUT_RIGHT_BUTTON	:	
+				printf("botao direito?\n");
+				break;
 			}
 		glutPostRedisplay();
 		}
@@ -138,8 +184,24 @@ void desenho(void) {
 /// ***********************************************************************
 
 int main(int argc, char** argv) {
+	/*
+	quadtree x;
+	tPonto y1, y2;
+	y1.x = y1.y = 0;
+	y2.x = y2.y = 511;
 	
-char* filename = "images/Twitter.png";
+	init_quadtree(&x,y1, y2);
+
+	y1.x = y1.y = 200;
+	y2.x = y2.y = 300;
+
+	x.TR = allocate_quadtree(y1,y2,1);
+
+	info_quadtree(&x);
+
+	info_quadtree(x.TR);
+	*/
+	char* filename = "images/Twitter.png";
 
     if (argc > 1)
 		filename = argv[1];
