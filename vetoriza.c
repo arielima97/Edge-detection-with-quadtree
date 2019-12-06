@@ -14,11 +14,17 @@ int 			iHeight,
 				iChannels;
 
 bool 			desenha = false;
-
+char* 			filename; 
+int show_mode = 0;
+double precision = 1;
 /// ***********************************************************************
-/// ** 
+/// ** FUNÇÕES AUXILIARES
 /// ***********************************************************************
 
+
+// **********************************
+// ****** Coleta a cor do pixel
+// **********************************
 unsigned char getPixel(unsigned char* img, int x, int y)
 {
 	if(y >= iHeight || y < 0 || x >= iWidth || x < 0)
@@ -29,6 +35,9 @@ unsigned char getPixel(unsigned char* img, int x, int y)
 	return img[y*iHeight+x];
 }
 
+// **********************************
+// ****** Determina a cor do pixel
+// **********************************
 void setPixel(unsigned char* img, int x, int y, unsigned char value)
 {
 	if(y >= iHeight || y < 0 || x >= iWidth || x < 0)
@@ -39,6 +48,9 @@ void setPixel(unsigned char* img, int x, int y, unsigned char value)
 	img[y*iHeight+x] = value;
 }
 
+// **********************************************************************************************************
+// ****** Calcula média das cores do quadrante delimitado pelos pontos inferior esquerdo e superior direito
+// **********************************************************************************************************
 double getAreaAverage(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
 {
 	double total = 0;
@@ -51,10 +63,12 @@ double getAreaAverage(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
 			total += getPixel(img, i, j);  
 		}		
 	}
-	printf("Av: %lf\n", total / count);
 	return total / count;
 }
 
+// ************************************************************************************************
+// ****** Desenha borda do quadrante delimitado pelos pontos inferior esquerdo e superior direito
+// ************************************************************************************************
 void drawBorder(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
 {
 	for(int k = BottomLeft.y; k <= TopRight.y; k++)
@@ -68,37 +82,73 @@ void drawBorder(unsigned char* img, tPonto BottomLeft, tPonto TopRight)
 		setPixel(img, k, TopRight.y, 127);
 	}
 }
-void getBorderQuadtree(quadtree* root, unsigned char* img)
+
+// **********************************************************************************
+// ****** Desenha quadrantes da quadtree - algoritmo de pré-ordem
+// **********************************************************************************
+void drawBorderQuadtree(quadtree* root, unsigned char* img)
 {
 	if(root)
 	{
 		drawBorder(img, root->BottomLeft, root->TopRight);
-		printf("level = %d\n", root->Depth);
-		getBorderQuadtree(root->BL, img);
-		getBorderQuadtree(root->BR, img);
-		getBorderQuadtree(root->TL, img);
-		getBorderQuadtree(root->TR, img);
+		drawBorderQuadtree(root->BL, img);
+		drawBorderQuadtree(root->BR, img);
+		drawBorderQuadtree(root->TL, img);
+		drawBorderQuadtree(root->TR, img);
 	}
 }
 
-void SearchEdges(quadtree* root)
+// **********************************************************************************
+// ****** Preenche uma região entre os pontos inferior esquerdo e superior direito
+// **********************************************************************************
+void drawRegion(unsigned char* img, tPonto BottomLeft, tPonto TopRight, unsigned char color)
+{
+	for(int j = BottomLeft.y; j<= TopRight.y; j++)
+		for (int i = BottomLeft.x; i <= TopRight.x; i++)
+			setPixel(img, i, j, color); 
+}
+
+// *************************************************************
+// ****** Desenha os pixels das bordas baseado na quadtree
+// *************************************************************
+void drawEdges(quadtree* root, unsigned char* img, char color, int resolution)
+{
+	if(root)
+	{
+		if(size_quadtree(root) <= resolution)
+			drawRegion(img, root->BottomLeft, root->TopRight, color);
+		else
+		{
+			drawEdges(root->BL, img, color, resolution);
+			drawEdges(root->BR, img, color, resolution);
+			drawEdges(root->TL, img, color, resolution);
+			drawEdges(root->TR, img, color, resolution);
+		}			
+	}
+}
+
+// ********************************************************************************************************
+// ****** Procura quadrantes em que a média seja diferente de preto ou branco e cria mais 4 sub quadrantes
+// ********************************************************************************************************
+void SearchEdges(unsigned char* img, quadtree* root, int resolution)
 {	
-	double avr = getAreaAverage(image, root->BottomLeft, root->TopRight);
+	double avr = getAreaAverage(img, root->BottomLeft, root->TopRight);
 	double q_size = size_quadtree(root);
-	printf("Size: %d\n", q_size);
-	if(q_size > 15 & (avr > 2.0 & avr < 253.0))
+	if(q_size > resolution & (avr > 0.0 & avr < 255.0))
 	{
 		split_quadtree(root);
-		SearchEdges(root->BL);
-		SearchEdges(root->BR);
-		SearchEdges(root->TL);
-		SearchEdges(root->TR);
+		SearchEdges(img, root->BL, resolution);
+		SearchEdges(img, root->BR, resolution);
+		SearchEdges(img, root->TL, resolution);
+		SearchEdges(img, root->TR, resolution);
 	}
 }
 
-void negativaImage(unsigned char* img, int w, int h) {
-
-	unsigned char 	aux;
+// **********************************
+// ****** Imagem em negativo
+// **********************************
+void negativaImage(unsigned char* img, int w, int h) 
+{
 	int 			i,
 					j;
 	
@@ -110,100 +160,98 @@ void negativaImage(unsigned char* img, int w, int h) {
 			setPixel(img, i, j, 255 - getPixel(img, i, j)); 
 }
 
+// ********************************************************************
+// ****** DESENHA VETORIZAÇÃO BASEADO NO MODO ESCOLHIDO PELO USUÁRIO
+// ********************************************************************
 
-
-// ***********************************************
-// ******                                   ******
-// ***********************************************
-
-void desenhaVetorizacao() {
-
-	printf("Aqui eu vou desenhar o resultado da vetorizacao\n");
-	
-	// rotina que deve ser implementada para visualizacao da arvore
-	// utilize a rotina desenhaQuadrante(p0, p1, cor)
-	// fornecendo os pontos inicial e final do quadrante e a sua cor
-	// funcao do valor do pixel ou da regiao que voce quer desenhar
-	
-	tPonto p0, p1;
-	 
-	p0.x = p0.y = 0;
-
-	p1.x = iWidth/2;
-	p1.y = iHeight/2;	
-	desenhaQuadrante(p0, p1, 64);
-
-	p0.x = iWidth;
-	p0.y = iHeight;
-	desenhaQuadrante(p0, p1, 222);
-
-}
-	
-/// ***********************************************************************
-/// ** 
-/// ***********************************************************************
-
-void vetorizaImagem() {
+void desenhaVetorizacao(int mode) {
 	quadtree Q;
 	tPonto p0, p1;
 	p0.x = 0;
 	p0.y = 0;
 	p1.x = iWidth - 1;
 	p1.y = iHeight - 1;
-	init_quadtree(&Q, p0, p1);
+	unsigned char* x = leImagem(filename, false);
+	switch (mode)
+	{
+	case 1:
+		printf("Visualizando os quadrantes da quadtree. Tamanho da borda: %d.\n", (int)precision);
+		unsigned char* img_squares;
+		img_squares = leImagem(filename, false);
+		init_quadtree(&Q, p0, p1);
+		SearchEdges(img_squares, &Q, (int) precision);
+		drawBorderQuadtree(&Q, img_squares);
+		glDrawPixels( iWidth, iHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_squares );
+		break;
+	case 2:
+		printf("Visualiza vetorização com fundo preto. Tamanho da borda: %d.\n", (int)precision);
+		init_quadtree(&Q, p0, p1);
+		SearchEdges(x, &Q, (int) precision);
+		for (int j = 0; j < iHeight; j++)
+			for (int i = 0; i < iWidth; i++)
+				setPixel(x, i, j, 0);
+		drawEdges(&Q, x, 255, (int) precision);
+		glDrawPixels( iWidth, iHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, x );
+		break;
+	case 3:
+		printf("Visualiza vetorização com fundo branco. Tamanho da borda: %d.\n", (int)precision);
+		init_quadtree(&Q, p0, p1);
+		SearchEdges(x, &Q, (int) precision);
+		drawEdges(&Q, x, 127, (int) precision);
+		glDrawPixels( iWidth, iHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, x );
+		break;
+	default:
+		break;
+	}
 	
-	SearchEdges(&Q);
-
-	getBorderQuadtree(&Q, image);
 }
 	
 /// ***********************************************************************
-/// ** 
+/// ** SELECIONA FUNÇÃO
 /// ***********************************************************************
 
 void teclado(unsigned char key, int x, int y) {
 
 	switch (key) {
 		case 27		: 	exit(0);
+						break;
+		case '1'	:	// Visualiza quadrantes da quadtree.
+						show_mode = 1;
+						desenha = 1;
 						break;				
-		case 'v'	:
-		case 'V'	: 	vetorizaImagem();
+		case '2'	:	// Vetoriza a imagem e exibe as bordas - fundo preto.
+					 	show_mode = 2;
+						desenha = 1;
 						break;				
-		case 'q'	:
+		case '3'	:	// Vetoriza a imagem e exibe as bordas - fundo branco borda cinza.
+						show_mode = 3;
+						desenha = 1;
+						break;
+		case '+'	:	// Aumenta o tamanho da borda.
+						precision *= 1.5;
+						if(precision > 10000)
+							precision = 10000;
+						desenha = 1;
+						break;
+		case '-'	:	// Diminui o tamanho da borda.
+						precision /= 1.5;
+						if(precision < 1)
+							precision = 1;
+						desenha = 1;
+						break;									
+		case 'q'	:	// Visualiza imagem original.
 		case 'Q'	: 	desenha = !desenha;
-						break;	
-
-		case 'r'	: 	
-		case 'R'	: 	negativaImage(image, iHeight, iWidth);
-						break;			
+						break;		
 		}
 	glutPostRedisplay();
 }
-		
-/// ***********************************************************************
-/// **
-/// ***********************************************************************
 
 void mouse(int button, int button_state, int x, int y ) {
 
 	if 	(button_state == GLUT_DOWN ) {
-		switch (button) {
-			
-			case GLUT_LEFT_BUTTON	: 	
-				printf("botao esquerdo?\n");		
-				break;
-	
-			case GLUT_RIGHT_BUTTON	:	
-				printf("botao direito?\n");
-				break;
-			}
 		glutPostRedisplay();
 		}
 }
-
-/// ***********************************************************************
-/// ** 
-/// ***********************************************************************
 
 void desenho(void) {
 
@@ -212,26 +260,29 @@ void desenho(void) {
     glColor3f (1.0, 1.0, 1.0);
     
     if (desenha)
-    	desenhaVetorizacao();
+    	desenhaVetorizacao(show_mode);
     else
     	glDrawPixels( iWidth, iHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, image );
    	
     glutSwapBuffers ();
 }
 
-/// ***********************************************************************
-/// ** 
-/// ***********************************************************************
-
 int main(int argc, char** argv) {
-	char* filename = "images/Twitter.png";
-
+	filename = "images/Twitter.png";
+	
     if (argc > 1)
 		filename = argv[1];
 
-	image = leImagem(filename);
-			
-	criaJanela(argc, argv);
+	image = leImagem(filename, true);
+
+	// Instruções
+	printf("\n- Pressione 1 para visualizar a estrutura quadtree na imagem.\n");
+	printf("\n- Pressione 2 para visualizar as bordas com o fundo preto.\n");
+	printf("\n- Pressione 3 para visualizar as bordas com o fundo branco.\n");
+	printf("\n- Pressione Q para visualizar as bordas com o fundo branco.\n");
+	printf("\n- Pressione + para aumentar tamanho da borda.\n");
+	printf("\n- Pressione - para aumentar tamanho da borda.\n");		
+	criaJanela(argc, argv, "Quadtree - Estrutura de dados");
 
     initOpenGL();
     

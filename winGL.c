@@ -38,7 +38,7 @@ void revertImage(unsigned char* img, int w, int h) {
 /// ** 
 /// ***********************************************************************
 
-unsigned char* leImagem(char* filename) {
+unsigned char* leImagem(char* filename, bool show_status) {
 	
 	unsigned char 	*image 	= NULL;
 	
@@ -49,10 +49,12 @@ unsigned char* leImagem(char* filename) {
     	exit(0);
     	}
     
-	printf("Imagem 		=> %s\n", filename);
-	printf("Resolucao 	=> %d x %d\n", iHeight, iWidth);
-	printf("Channels 	=> %d\n", iChannels);
-
+	if(show_status)
+	{
+		printf("Imagem 		=> %s\n", filename);
+		printf("Resolucao 	=> %d x %d\n", iHeight, iWidth);
+		printf("Channels 	=> %d\n", iChannels);
+	}
 	revertImage(image, iWidth, iHeight);
 
     return image;	
@@ -104,13 +106,13 @@ void reshape (int w, int h)
 /// ** 
 /// ***********************************************************************
 
-void criaJanela(int argc, char** argv) {
+void criaJanela(int argc, char** argv, char* name) {
 	
     glutInit(&argc, argv);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize (iWidth, iHeight);
     glutInitWindowPosition (100, 100);
-    glutCreateWindow ("Quadtree - Estrutura de Dados");
+    glutCreateWindow (name);
 }
 
 
